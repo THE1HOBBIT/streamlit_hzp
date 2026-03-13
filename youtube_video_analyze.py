@@ -204,48 +204,85 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"任务失败: {str(e)}")
 # ================= Streamlit UI 界面 =================
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+# ... 保持你之前的 import ...
 
 st.set_page_config(page_title="YouTube AI 分析助手", page_icon="🎬")
 
-st.title("🎬 YouTube 视频自动化分析")
-st.caption("从飞书多维表格读取链接 -> Qwen AI 总结 -> 自动回填表格")
+st.title("🎬 YouTube 视频内容分析自动化")
 
-if st.button("🚀 开始同步并分析", type="primary"):
-    # 创建进度条和日志窗口
-    log_container = st.container()
-    progress_bar = st.progress(0)
-    status_text = st.empty()
+# --- 初始化日志状态 ---
+if "log_messages" not in st.session_state:
+    st.session_state.log_messages = ""
 
+def add_log(message):
+    """自定义日志添加函数"""
+    now = datetime.now().strftime("%H:%M:%S")
+    new_log = f"[{now}] {message}\n"
+    st.session_state.log_messages += new_log
+
+# --- UI 布局 ---
+col1, col2 = st.columns([1, 1])
+with col1:
+    run_btn = st.button("🚀 开始同步并分析", type="primary", use_container_width=True)
+with col2:
+    if st.button("🧹 清除日志", use_container_width=True):
+        st.session_state.log_messages = ""
+        st.rerun()
+
+# 进度条
+progress_bar = st.progress(0)
+status_text = st.empty()
+
+# 日志显示区域 - 使用固定高度的容器模拟终端
+st.subheader("运行日志")
+log_box = st.empty() # 创建一个占位符
+
+# 每次渲染时更新日志框内容
+log_box.code(st.session_state.log_messages, language="bash")
+
+# --- 执行逻辑 ---
+if run_btn:
     try:
-        with st.spinner("正在初始化配置..."):
-            api_info = get_feishu_api()
-            tasks = get_feishu_youtube_links()
+        add_log("🔄 正在初始化配置...")
+        api_info = get_feishu_api()
+        tasks = get_feishu_youtube_links()
         
         if not tasks:
-            st.success("🎉 暂无需要处理的新视频！")
+            add_log("🎉 暂无需要处理的新视频。")
+            st.success("暂无新视频！")
         else:
             total = len(tasks)
             for i, task in enumerate(tasks):
-                # 更新 UI
+                # 1. 更新进度
                 progress = (i + 1) / total
                 progress_bar.progress(progress)
-                status_text.text(f"正在处理第 {i+1}/{total} 个视频...")
+                status_text.text(f"正在处理第 {i+1}/{total} 个视频")
                 
-                with log_container:
-                    st.write(f"🔍 正在抓取: {task['url']}")
-                    # 执行你的原有逻辑
-                    result = analyze_youtube_video(task['url'], api_info) 
-                    if result:
-                        update_feishu_analysis_results(task['record_id'], result)
-                        st.toast(f"已完成: {task['url']}", icon="✅")
-                    else:
-                        st.error(f"处理失败: {task['url']}")
+                # 2. 实时打印日志
+                add_log(f"🎬 正在处理视频: {task['url']}")
+                log_box.code(st.session_state.log_messages, language="bash")
                 
-                # 稍微停顿，防止触发 API 频控
+                # 3. 执行分析
+                result = analyze_youtube_video(task['url'], api_info) 
+                
+                if result:
+                    update_feishu_analysis_results(task['record_id'], result)
+                    add_log(f"✅ 处理成功! 主题: {result.get('topic')}")
+                else:
+                    add_log(f"❌ 处理失败: {task['url']}")
+                
+                # 再次更新日志框以确保看到最新内容
+                log_box.code(st.session_state.log_messages, language="bash")
                 sleep(1)
             
+            add_log("🏁 所有任务已完成！")
+            log_box.code(st.session_state.log_messages, language="bash")
             st.balloons()
-            st.success("✅ 任务全部执行完毕！")
 
     except Exception as e:
-        st.error(f"程序运行出错: {e}")
+        add_log(f"‼️ 发生错误: {str(e)}")
+        log_box.code(st.session_state.log_messages, language="bash")
+        st.error(f"程序运行出错")
