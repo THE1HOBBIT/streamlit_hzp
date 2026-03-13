@@ -216,18 +216,16 @@ if "log_history" not in st.session_state:
     st.session_state.log_history = []
 
 def write_log(message, level="INFO"):
-    """实时向页面和后台存储添加日志"""
-    now = datetime.datetime.now().strftime("%H:%M:%S")
+    import datetime as dt  # 局部导入并重命名，彻底避免冲突
+    now = dt.datetime.now().strftime("%H:%M:%S")
+    
     emoji = "🔹" if level == "INFO" else "✅" if level == "SUCCESS" else "❌"
     log_entry = f"[{now}] {emoji} {message}"
     
-    # 将新日志插入到列表最前面（这样最新日志就在最上面）
-    st.session_state.log_history.insert(0, log_entry)
+    if "log_history" not in st.session_state:
+        st.session_state.log_history = []
     
-    # 限制日志长度，防止内存占用过高
-    if len(st.session_state.log_history) > 100:
-        st.session_state.log_history.pop()
-
+    st.session_state.log_history.insert(0, log_entry)
 # --- UI 布局 ---
 col_ctrl, col_progress = st.columns([1, 3])
 with col_ctrl:
