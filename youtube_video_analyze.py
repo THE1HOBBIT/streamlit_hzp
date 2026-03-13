@@ -24,18 +24,22 @@ BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 MODEL_NAME = "qwen3.5-plus"
 
 #  1. 定义终端日志拦截器 ---
+# --- 1. 拦截器类：核心改进 ---
 class TerminalEmitter:
     def __init__(self, placeholder):
         self.placeholder = placeholder
-        self.log_content = ""
+        # 初始化 session_state 存储
+        if "terminal_logs" not in st.session_state:
+            st.session_state.terminal_logs = ""
 
     def write(self, text):
-        if text.strip():  # 只记录有内容的行
+        if text.strip():
             now = datetime.datetime.now().strftime("%H:%M:%S")
-            # 将 print 的内容格式化为带时间的日志
-            self.log_content += f"[{now}] {text.strip()}\n"
-            # 实时刷新网页上的代码块
-            self.placeholder.code(self.log_content, language="bash")
+            new_entry = f"[{now}] {text.strip()}\n"
+            # 存入 session_state
+            st.session_state.terminal_logs += new_entry
+            # 实时渲染：展示最新的所有内容
+            self.placeholder.code(st.session_state.terminal_logs, language="bash")
 
     def flush(self):
         pass
@@ -235,14 +239,19 @@ st.caption("实时捕获程序 print 日志")
 # 创建一个固定在页面上的日志占位符
 terminal_placeholder = st.empty()
 
-# 启动按钮
+# 如果 session_state 里已经有之前的日志，先展示出来
+if "terminal_logs" in st.session_state and st.session_state.terminal_logs:
+    terminal_placeholder.code(st.session_state.terminal_logs, language="bash")
+
+# 按钮控制
 if st.button("🚀 开始同步并分析", type="primary", use_container_width=True):
-    # 初始化拦截器
+    # 重置之前的日志
+    st.session_state.terminal_logs = ""
+    
     emitter = TerminalEmitter(terminal_placeholder)
-    # 记录原始的输出方向
-    old_stdout = sys.stdout 
-    # 重定向 print 到我们的 emitter
-    sys.stdout = emitter 
+    old_stdout = sys.stdout
+    sys.stdout = emitter
+
 
     try:
         # 执行你的主程序函数
@@ -260,3 +269,9 @@ if st.button("🚀 开始同步并分析", type="primary", use_container_width=T
     finally:
         # 无论成功失败，必须还原标准输出，否则 Streamlit 会出问题
         sys.stdout = old_stdout
+        # 运行结束后，最后刷新一遍日志，确保它留在页面上
+        terminal_placeholder.code(st.session_state.terminal_logs, language="bash")
+
+    if st.button("🧹 清空控制台日志"):
+        st.session_state.terminal_logs = ""
+        st.rerun()
