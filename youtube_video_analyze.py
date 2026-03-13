@@ -256,11 +256,15 @@ if st.button("🚀 开始同步并分析", type="primary", use_container_width=T
     try:
         # 执行你的主程序函数
         api_result = get_feishu_api()
+        print("已获取Qwen api")
         link_result = get_feishu_youtube_links()
-
+        
         for link in link_result:
+            print(f"已获取{link.get('url')},正在处理...")
             qwen_json_result = analyze_youtube_video(link.get('url'),api_result)
+            print(f"主题：{qwen_json_result.get('topic')}\n概况：{qwen_json_result.get('overview')}\n概况：{qwen_json_result.get('classification')}")
             update_feishu_analysis_results(link.get('record_id'),qwen_json_result)
+            print(f"{link.get('url')}上传飞书成功")
         st.balloons()
         st.success("所有任务处理完毕！")
     except Exception as e:
