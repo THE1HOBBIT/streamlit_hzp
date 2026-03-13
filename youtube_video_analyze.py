@@ -6,6 +6,8 @@ import requests
 from time import sleep
 from youtube_transcript_api import YouTubeTranscriptApi
 import streamlit as st
+import sys
+import io
 
 # ================= 1. 固定配置区域 =================
 # 飞书多维表格配置
@@ -21,7 +23,31 @@ CONFIG_TABLE_ID = "tblczG2gCoDWlXYe"
 BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" 
 MODEL_NAME = "qwen3.5-plus"
 
-# ================= 2. 核心逻辑函数 (保持原逻辑不变) =================
+#  1. 定义终端日志拦截器 ---
+class TerminalEmitter:
+    def __init__(self, placeholder):
+        self.placeholder = placeholder
+        self.log_content = ""
+
+    def write(self, text):
+        if text.strip():  # 只记录有内容的行
+            now = datetime.datetime.now().strftime("%H:%M:%S")
+            # 将 print 的内容格式化为带时间的日志
+            self.log_content += f"[{now}] {text.strip()}\n"
+            # 实时刷新网页上的代码块
+            self.placeholder.code(self.log_content, language="bash")
+
+    def flush(self):
+        pass
+
+# --- 2. 页面配置 ---
+st.set_page_config(page_title="YouTube AI 助手", layout="wide")
+st.title("🎬 YouTube 视频内容分析自动化")
+st.caption("实时捕获程序 print 日志")
+
+
+
+#  2. 核心逻辑函数 (保持原逻辑不变) =================
 
 def get_feishu_api():
     # 注意：访问飞书时禁用代理
@@ -203,119 +229,33 @@ if __name__ == "__main__":
             update_feishu_analysis_results(link.get('record_id'),qwen_json_result)
     except Exception as e:
         print(f"任务失败: {str(e)}")
+
 # ================= Streamlit UI 界面 =================
 from datetime import datetime
 # --- 配置页面 ---
 st.set_page_config(page_title="YouTube视频内容AI分析助手", layout="wide")
-
 st.title("🎬 YouTube 视频内容分析自动化")
 
-# --- 核心日志逻辑 ---
-# 使用 session_state 存储历史日志，防止页面重载时丢失
-if "log_history" not in st.session_state:
-    st.session_state.log_history = []
+# --- 4. 界面组件 ---
+# 创建一个固定在页面上的日志占位符
+terminal_placeholder = st.empty()
 
-def render_log_panel(lines: list[str], height_px: int = 420):
-    def esc(s: str) -> str:
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    log_html = "<br>".join(esc(x) for x in lines)
-    st.markdown(
-        f"""
-        <div style="
-            height:{height_px}px;
-            overflow-y:auto;
-            padding:10px;
-            border:1px solid #ddd;
-            background-color:#fafafa;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.45;
-        ">{log_html}</div>
-        """,
-        unsafe_allow_html=True
-    )
+# 启动按钮
+if st.button("🚀 开始同步并分析", type="primary", use_container_width=True):
+    # 初始化拦截器
+    emitter = TerminalEmitter(terminal_placeholder)
+    # 记录原始的输出方向
+    old_stdout = sys.stdout 
+    # 重定向 print 到我们的 emitter
+    sys.stdout = emitter 
 
-def write_log(message, level="INFO"):
-    import datetime as dt  # 局部导入并重命名，彻底避免冲突
-    now = dt.datetime.now().strftime("%H:%M:%S")
-    
-    emoji = "🔹" if level == "INFO" else "✅" if level == "SUCCESS" else "❌"
-    log_entry = f"[{now}] {emoji} {message}"
-    
-    if "log_history" not in st.session_state:
-        st.session_state.log_history = []
-    
-    st.session_state.log_history.insert(0, log_entry)
-
-
-def get_logs(rid: str):
-    return st.session_state.logs_by_run.get(rid, [])
-
-
-# --- UI 布局 ---
-col_ctrl, col_progress = st.columns([1, 3])
-with col_ctrl:
-    run_btn = st.button("🚀 开始自动化任务", type="primary", use_container_width=True)
-
-# 进度条和状态文字
-progress_bar = st.progress(0)
-status_indicator = st.empty()
-
-st.subheader("任务实时运行日志")
-# 这是解决白屏的关键：创建一个固定高度的占位符区域
-render_log_panel(get_logs(st.session_state.run_id), height_px=420)
-
-
-# --- 点击运行后的逻辑 ---
-if run_btn:
     try:
-        write_log("正在初始化飞书配置...", "INFO")
-        # 实时更新一次界面
-        log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
-        
-        api_info = get_feishu_api()
-        tasks = get_feishu_youtube_links()
-
-        if not tasks:
-            write_log("未发现待处理任务", "INFO")
-            log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
-            st.info("暂无待处理视频")
-        else:
-            total = len(tasks)
-            for i, task in enumerate(tasks):
-                # 1. 更新 UI 状态
-                progress = (i + 1) / total
-                progress_bar.progress(progress)
-                status_indicator.markdown(f"**当前进度:** {i+1} / {total}")
-
-                # 2. 抓取与日志更新
-                write_log(f"正在抓取视频数据: {task['url']}")
-                # 强制刷新日志框
-                log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
-                
-                # --- 这里执行你的 get_video_all_data ---
-                # data = get_video_all_data(task['url']) 
-                
-                write_log(f"正在调用 Qwen AI 进行分析...")
-                log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
-                
-                # --- 这里执行你的 analyze_youtube_video ---
-                result = analyze_youtube_video(task['url'], api_info)
-                
-                if result:
-                    update_feishu_analysis_results(task['record_id'], result)
-                    write_log(f"数据回填完成: {result.get('topic')[:20]}...", "SUCCESS")
-                else:
-                    write_log(f"分析失败，请检查视频链接或 API", "ERROR")
-                
-                # 再次强制刷新日志框
-                log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
-                sleep(0.5)
-
-            st.balloons()
-            write_log("🏁 所有任务已处理完成！", "SUCCESS")
-            log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
-
+        # 执行你的主程序函数
+        st.balloons()
+        st.success("所有任务处理完毕！")
     except Exception as e:
-        write_log(f"程序崩溃: {str(e)}", "ERROR")
-        log_placeholder.code("\n".join(st.session_state.log_history), language="bash")
+        print(f"❌ 程序发生崩溃: {str(e)}")
+        st.error("运行出错，请查看日志")
+    finally:
+        # 无论成功失败，必须还原标准输出，否则 Streamlit 会出问题
+        sys.stdout = old_stdout
