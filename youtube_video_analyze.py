@@ -40,12 +40,6 @@ class TerminalEmitter:
     def flush(self):
         pass
 
-# --- 2. 页面配置 ---
-st.set_page_config(page_title="YouTube AI 助手", layout="wide")
-st.title("🎬 YouTube 视频内容分析自动化")
-st.caption("实时捕获程序 print 日志")
-
-
 
 #  2. 核心逻辑函数 (保持原逻辑不变) =================
 
@@ -233,8 +227,9 @@ if __name__ == "__main__":
 # ================= Streamlit UI 界面 =================
 from datetime import datetime
 # --- 配置页面 ---
-st.set_page_config(page_title="YouTube视频内容AI分析助手", layout="wide")
+st.set_page_config(page_title="YouTube AI 助手", layout="wide")
 st.title("🎬 YouTube 视频内容分析自动化")
+st.caption("实时捕获程序 print 日志")
 
 # --- 4. 界面组件 ---
 # 创建一个固定在页面上的日志占位符
@@ -251,6 +246,12 @@ if st.button("🚀 开始同步并分析", type="primary", use_container_width=T
 
     try:
         # 执行你的主程序函数
+        api_result = get_feishu_api()
+        link_result = get_feishu_youtube_links()
+
+        for link in link_result:
+            qwen_json_result = analyze_youtube_video(link.get('url'),api_result)
+            update_feishu_analysis_results(link.get('record_id'),qwen_json_result)
         st.balloons()
         st.success("所有任务处理完毕！")
     except Exception as e:
