@@ -206,7 +206,7 @@ if __name__ == "__main__":
 # ================= Streamlit UI 界面 =================
 from datetime import datetime
 # --- 配置页面 ---
-st.set_page_config(page_title="YouTube AI 分析助手", layout="wide")
+st.set_page_config(page_title="YouTube视频内容AI分析助手", layout="wide")
 
 st.title("🎬 YouTube 视频内容分析自动化")
 
