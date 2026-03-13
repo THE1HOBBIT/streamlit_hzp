@@ -215,6 +215,26 @@ st.title("🎬 YouTube 视频内容分析自动化")
 if "log_history" not in st.session_state:
     st.session_state.log_history = []
 
+def render_log_panel(lines: list[str], height_px: int = 420):
+    def esc(s: str) -> str:
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    log_html = "<br>".join(esc(x) for x in lines)
+    st.markdown(
+        f"""
+        <div style="
+            height:{height_px}px;
+            overflow-y:auto;
+            padding:10px;
+            border:1px solid #ddd;
+            background-color:#fafafa;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        ">{log_html}</div>
+        """,
+        unsafe_allow_html=True
+    )
+
 def write_log(message, level="INFO"):
     import datetime as dt  # 局部导入并重命名，彻底避免冲突
     now = dt.datetime.now().strftime("%H:%M:%S")
@@ -226,6 +246,12 @@ def write_log(message, level="INFO"):
         st.session_state.log_history = []
     
     st.session_state.log_history.insert(0, log_entry)
+
+
+def get_logs(rid: str):
+    return st.session_state.logs_by_run.get(rid, [])
+
+
 # --- UI 布局 ---
 col_ctrl, col_progress = st.columns([1, 3])
 with col_ctrl:
@@ -237,11 +263,8 @@ status_indicator = st.empty()
 
 st.subheader("任务实时运行日志")
 # 这是解决白屏的关键：创建一个固定高度的占位符区域
-log_placeholder = st.empty()
+render_log_panel(get_logs(st.session_state.run_id), height_px=420)
 
-# 初始化显示（如果已有历史日志）
-with log_placeholder.container():
-    st.code("\n".join(st.session_state.log_history), language="bash")
 
 # --- 点击运行后的逻辑 ---
 if run_btn:
