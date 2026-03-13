@@ -1,4 +1,3 @@
-import streamlit as st
 import pandas as pd
 import os
 import json
@@ -6,6 +5,7 @@ import yt_dlp
 import requests
 from time import sleep
 from youtube_transcript_api import YouTubeTranscriptApi
+import streamlit as st
 
 # ================= 1. 固定配置区域 =================
 # 飞书多维表格配置
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"任务失败: {str(e)}")
 # ================= Streamlit UI 界面 =================
-
+from datetime import datetime
 # --- 配置页面 ---
 st.set_page_config(page_title="YouTube AI 分析助手", layout="wide")
 
@@ -217,7 +217,7 @@ if "log_history" not in st.session_state:
 
 def write_log(message, level="INFO"):
     """实时向页面和后台存储添加日志"""
-    now = datetime.now().strftime("%H:%M:%S")
+    now = datetime.datetime.now().strftime("%H:%M:%S")
     emoji = "🔹" if level == "INFO" else "✅" if level == "SUCCESS" else "❌"
     log_entry = f"[{now}] {emoji} {message}"
     
