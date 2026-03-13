@@ -34,7 +34,7 @@ class TerminalEmitter:
 
     def write(self, text):
         if text.strip():
-            now = datetime.datetime.now().strftime("%H:%M:%S")
+            now = datetime.now().strftime("%H:%M:%S")
             new_entry = f"[{now}] {text.strip()}\n"
             # 存入 session_state
             st.session_state.terminal_logs += new_entry
