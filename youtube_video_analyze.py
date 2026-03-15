@@ -9,6 +9,8 @@ import sys
 import io
 from datetime import datetime
 import pandas as pd
+import subprocess
+from pathlib import Path
 
 # ================= 1. 固定配置区域 =================
 # 飞书多维表格配置
@@ -230,12 +232,18 @@ if __name__ == "__main__":
         print(f"任务失败: {str(e)}")
 
 # ================= Streamlit UI 界面 =================
-import streamlit as st
-from pathlib import Path
-
 LOG_FILE = "server.log"
 
 st.title("Server Log Panel")
+
+# 启动程序按钮
+if st.button("Start Program"):
+    subprocess.Popen(
+        ["python", "youtube_video_analyze.py"],  # 你的底层逻辑程序
+        stdout=open(LOG_FILE, "a"),
+        stderr=open(LOG_FILE, "a")
+    )
+    st.success("Program started")
 
 log_placeholder = st.empty()
 
@@ -244,10 +252,10 @@ def read_last_lines(file, n=200):
         lines = f.readlines()
     return "".join(lines[-n:])
 
+# 实时刷新日志
 while True:
     if Path(LOG_FILE).exists():
         logs = read_last_lines(LOG_FILE)
-
         log_placeholder.code(logs, language="bash")
 
-    sleep(1)
+    time.sleep(1)
