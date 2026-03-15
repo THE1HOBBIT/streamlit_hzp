@@ -3,11 +3,12 @@ import os
 import json
 import yt_dlp
 import requests
-import time 
+from time import sleep
 from youtube_transcript_api import YouTubeTranscriptApi
 import streamlit as st
 import sys
 import io
+from datetime import datetime
 
 # ================= 1. 固定配置区域 =================
 # 飞书多维表格配置
@@ -249,4 +250,4 @@ while True:
 
         log_placeholder.code(logs, language="bash")
 
-    time.sleep(1)
+    sleep(1)
