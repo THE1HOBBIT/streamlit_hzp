@@ -13,10 +13,10 @@ from pathlib import Path
 
 LOG_FILE = "server.log"
 
-st.title("Server Log Panel")
+st.title("Youtube视频内容 AI 分析工具")
 
 # 启动程序按钮
-if st.button("Start Program"):
+if st.button("开始程序"):
     with open(LOG_FILE, "a") as f:
         subprocess.Popen(
             [sys.executable, "youtube_video_analyze.py"],
