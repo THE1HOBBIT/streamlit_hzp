@@ -258,4 +258,4 @@ while True:
         logs = read_last_lines(LOG_FILE)
         log_placeholder.code(logs, language="bash")
 
-    time.sleep(1)
+    sleep(1)
