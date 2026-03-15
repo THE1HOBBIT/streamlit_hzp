@@ -232,30 +232,56 @@ if __name__ == "__main__":
         print(f"任务失败: {str(e)}")
 
 # ================= Streamlit UI 界面 =================
+import streamlit as st
+import subprocess
+import time
+from pathlib import Path
+import pandas as pd
+import os
+import json
+import yt_dlp
+import requests
+from youtube_transcript_api import YouTubeTranscriptApi
+import sys
+import io
+
+
 LOG_FILE = "server.log"
 
 st.title("Server Log Panel")
 
+# 确保日志文件存在，避免读取报错
+if not Path(LOG_FILE).exists():
+    with open(LOG_FILE, "w") as f:
+        f.write("System Initialized...\n")
+
 # 启动程序按钮
 if st.button("Start Program"):
-    subprocess.Popen(
-        ["python", "youtube_video_analyze.py"],  # 你的底层逻辑程序
-        stdout=open(LOG_FILE, "a"),
-        stderr=open(LOG_FILE, "a")
-    )
-    st.success("Program started")
+    # 使用 sys.executable 确保环境一致
+    # 使用 with 自动管理文件关闭
+    with open(LOG_FILE, "a") as f:
+        subprocess.Popen(
+            [sys.executable, "youtube_video_analyze.py"], 
+            stdout=f,
+            stderr=f
+        )
+    st.success("Program started! Logs will update below.")
 
+st.subheader("Real-time Logs")
 log_placeholder = st.empty()
 
-def read_last_lines(file, n=200):
-    with open(file, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    return "".join(lines[-n:])
+def read_last_lines(file, n=100):
+    try:
+        with open(file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            return "".join(lines[-n:])
+    except Exception as e:
+        return f"Error reading logs: {e}"
 
-# 实时刷新日志
-while True:
-    if Path(LOG_FILE).exists():
-        logs = read_last_lines(LOG_FILE)
-        log_placeholder.code(logs, language="bash")
+# 改进的刷新逻辑：不要使用死循环
+# 这里的实现会让页面在读取完日志后暂停 2 秒并自动重新运行整个脚本
+logs = read_last_lines(LOG_FILE)
+log_placeholder.code(logs, language="bash")
 
-    sleep(1)
+sleep(2)  # 稍微停顿，避免过度消耗 CPU
+st.rerun()    # 告诉 Streamlit 重新运行脚本以刷新内容
