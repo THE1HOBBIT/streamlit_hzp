@@ -3,7 +3,7 @@ import os
 import json
 import yt_dlp
 import requests
-from time import sleep
+import time 
 from youtube_transcript_api import YouTubeTranscriptApi
 import streamlit as st
 import sys
@@ -229,53 +229,24 @@ if __name__ == "__main__":
         print(f"任务失败: {str(e)}")
 
 # ================= Streamlit UI 界面 =================
-from datetime import datetime
-# --- 配置页面 ---
-st.set_page_config(page_title="YouTube AI 助手", layout="wide")
-st.title("🎬 YouTube 视频内容分析自动化")
-st.caption("实时捕获程序 print 日志")
+import streamlit as st
+from pathlib import Path
 
-# --- 4. 界面组件 ---
-# 创建一个固定在页面上的日志占位符
-terminal_placeholder = st.empty()
+LOG_FILE = "server.log"
 
-# 如果 session_state 里已经有之前的日志，先展示出来
-if "terminal_logs" in st.session_state and st.session_state.terminal_logs:
-    terminal_placeholder.code(st.session_state.terminal_logs, language="bash")
+st.title("Server Log Panel")
 
-# 按钮控制
-if st.button("🚀 开始同步并分析", type="primary", use_container_width=True):
-    # 重置之前的日志
-    st.session_state.terminal_logs = ""
-    
-    emitter = TerminalEmitter(terminal_placeholder)
-    old_stdout = sys.stdout
-    sys.stdout = emitter
+log_placeholder = st.empty()
 
+def read_last_lines(file, n=200):
+    with open(file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    return "".join(lines[-n:])
 
-    try:
-        # 执行你的主程序函数
-        api_result = get_feishu_api()
-        print("已获取Qwen api")
-        link_result = get_feishu_youtube_links()
-        
-        for link in link_result:
-            print(f"已获取{link.get('url')},正在处理...")
-            qwen_json_result = analyze_youtube_video(link.get('url'),api_result)
-            print(f"主题：{qwen_json_result.get('topic')}\n概况：{qwen_json_result.get('overview')}\n概况：{qwen_json_result.get('classification')}")
-            update_feishu_analysis_results(link.get('record_id'),qwen_json_result)
-            print(f"{link.get('url')}上传飞书成功")
-        st.balloons()
-        st.success("所有任务处理完毕！")
-    except Exception as e:
-        print(f"❌ 程序发生崩溃: {str(e)}")
-        st.error("运行出错，请查看日志")
-    finally:
-        # 无论成功失败，必须还原标准输出，否则 Streamlit 会出问题
-        sys.stdout = old_stdout
-        # 运行结束后，最后刷新一遍日志，确保它留在页面上
-        terminal_placeholder.code(st.session_state.terminal_logs, language="bash")
+while True:
+    if Path(LOG_FILE).exists():
+        logs = read_last_lines(LOG_FILE)
 
-    if st.button("🧹 清空控制台日志"):
-        st.session_state.terminal_logs = ""
-        st.rerun()
+        log_placeholder.code(logs, language="bash")
+
+    time.sleep(1)
