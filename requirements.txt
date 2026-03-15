@@ -3,4 +3,3 @@ streamlit
 requests
 yt-dlp
 youtube-transcript-api
-pandas
