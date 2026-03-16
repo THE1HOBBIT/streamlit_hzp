@@ -5,12 +5,9 @@ import time
 from pathlib import Path 
 import pandas as pd 
 import os 
-import streamlit as st
-import subprocess
 import sys
-import time
-from pathlib import Path
 from streamlit_autorefresh import st_autorefresh
+from collections import deque
 
 LOG_FILE = "server.log"
 
@@ -31,8 +28,7 @@ st_autorefresh(interval=1000, key="logrefresh")
 
 def read_last_lines(file, n=200):
     with open(file, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    return "".join(lines[-n:])
+        return "".join(deque(f, n))
 
 if Path(LOG_FILE).exists():
     logs = read_last_lines(LOG_FILE)
