@@ -4,3 +4,4 @@ yt-dlp
 requests
 youtube-transcript-api
 pillow
+streamlit-autorefresh
