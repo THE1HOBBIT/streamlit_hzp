@@ -86,7 +86,7 @@ def get_feishu_youtube_links():
     for record in records:
         fields = record.get("fields", {})
         # 如果已经分析过了则跳过
-        if fields.get("Video Topic") and fields.get("Content Overview"):
+        if fields.get("video_topic") and fields.get("content_overview"):
             continue
         
         raw_link = fields.get("video_link")
