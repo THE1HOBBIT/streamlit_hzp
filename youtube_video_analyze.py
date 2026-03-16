@@ -148,7 +148,7 @@ def analyze_youtube_video(video_url,api_result):
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_result.get('target_Qwen_api')}"}
         prompt = f"""
 #Role:社媒运营专家
-#Task:分析YouTube视频字幕或元数据并输出JSON
+#Task:分析YouTube视频字幕\元数据并输出JSON
 #Definitions:
 1.topic(视频主题):核心讨论内容,依据画面/标题/字幕/口播选中心信息,多点选主1个,强次级括号补充,例:产品开箱(吐槽);
 2.classification(视频分类):内容呈现形式或表达类型,基于结构/叙事判断,不与主题混淆,主1次1,例:口播讲解/Vlog记录;
