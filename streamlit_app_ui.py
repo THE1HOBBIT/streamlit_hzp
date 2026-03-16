@@ -1,12 +1,9 @@
 # ================= Streamlit UI 界面 =================
-import streamlit as st 
-import subprocess 
-import time 
-from pathlib import Path 
-import pandas as pd 
-import os 
+import streamlit as st
+import subprocess
+from pathlib import Path
 import sys
-from streamlit_autorefresh import st_autorefresh  # pyright: ignore[reportMissingImports]
+from streamlit_autorefresh import st_autorefresh
 from collections import deque
 
 LOG_FILE = "server.log"
@@ -15,12 +12,18 @@ st.title("Youtube视频内容 AI分析工具")
 
 # 启动程序
 if st.button("开始运行"):
+
+    # 1️⃣ 先清空旧日志
+    open(LOG_FILE, "w").close()
+
+    # 2️⃣ 再以追加模式写入新日志
     with open(LOG_FILE, "a") as f:
         subprocess.Popen(
-            [sys.executable, "youtube_video_analyze.py"],
+            [sys.executable, "-u", "youtube_video_analyze.py"],  # -u 实时输出日志
             stdout=f,
             stderr=f
         )
+
     st.success("Program started")
 
 # 每1秒刷新一次
