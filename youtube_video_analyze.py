@@ -89,7 +89,7 @@ def get_feishu_youtube_links():
         if fields.get("Video Topic") and fields.get("Content Overview"):
             continue
         
-        raw_link = fields.get("Link")
+        raw_link = fields.get("video_link")
         # 兼容飞书链接字段的不同格式
         video_url = ""
         if isinstance(raw_link, dict): video_url = raw_link.get("link", "")
@@ -202,9 +202,9 @@ def update_feishu_analysis_results(record_id, analysis_data):
         # 构造回写内容
         payload = {
             "fields": {
-                "Video Topic": analysis_data.get("topic", ""),
-                "Content Overview": analysis_data.get("overview", ""),
-                "Video Classification": analysis_data.get("classification", "")
+                "video_topic": analysis_data.get("topic", ""),
+                "content_overview": analysis_data.get("overview", ""),
+                "video_classification": analysis_data.get("classification", "")
             }
         }
 
