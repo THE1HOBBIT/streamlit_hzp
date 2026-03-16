@@ -12,7 +12,7 @@ import pandas as pd
 import subprocess
 from pathlib import Path
 import threading
-from streamlit_autorefresh import st_autorefresh 
+from streamlit_autorefresh import st_autorefresh   # pyright: ignore[reportMissingImports]
 
 # ================= 1. 固定配置区域 =================
 # 飞书多维表格配置
@@ -233,77 +233,3 @@ if __name__ == "__main__":
             update_feishu_analysis_results(link.get('record_id'),qwen_json_result)
     except Exception as e:
         print(f"任务失败: {str(e)}")
-
-
-def write_log(message):
-    """将信息写入日志文件，供前端实时读取"""
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[{timestamp}] {message}\n")
-
-def read_last_lines(file, n=100):
-    if not Path(file).exists():
-        return "等待任务启动..."
-    with open(file, "r", encoding="utf-8") as f:
-        return "".join(deque(f, n))
-
-# 此处省略你原有的核心算法函数（如 fast_keyword_search_logic, vectorize_with_new_logic 等）
-# 建议在实际代码中保留这些函数定义，只需将 print 或 st.write 改为调用 write_log()
-
-# ================= 核心分析逻辑封装 =================
-def run_background_analysis():
-    try:
-        write_log("🚀 任务启动...")
-        # 1. 解析规则
-        write_log("正在抓取api数据...")
-        api_result = get_feishu_api()
-        write_log("正在抓取youtube url数据...")
-        link_result = get_feishu_youtube_links()
-
-        for link in link_result:
-            write_log(f"正在解析{link}。。")
-            qwen_json_result = analyze_youtube_video(link.get('url'),api_result)
-            write_log(f"{link}已分析视频内容")
-            update_feishu_analysis_results(link.get('record_id'),qwen_json_result)
-        
-        write_log("✅ 任务全部完成！点击下方下载按钮获取结果。")
-    
-    except Exception as e:
-        write_log(f"❌ 运行错误: {str(e)}")
-    finally:
-        st.session_state["is_running"] = False
-
-# ================= Streamlit UI =================
-st.set_page_config(page_title="Youtube视频 AI分析工具 1.0", layout="wide")
-st_autorefresh(interval=2000, key="log_refresh") # 每2秒自动刷新界面
-
-st.title("🔎 视频内容分析 (AI 后台模式)")
-
-# 初始化状态
-if "is_running" not in st.session_state:
-    st.session_state["is_running"] = False
-if "final_result" not in st.session_state:
-    st.session_state["final_result"] = None
-
-# 布局：左侧参数配置，右侧实时日志
-col_cfg, col_log = st.columns([1, 1.2])
-
-with col_cfg:
-
-    # 启动按钮
-    if st.button("🚀 开始运行", type="primary", use_container_width=True, disabled=st.session_state["is_running"]):
-            t = threading.Thread(target=run_background_analysis)
-            t.start()
-            st.success("任务已在后台启动，请观察右侧实时日志。")
-
-    # 下载按钮
-
-with col_log:
-    st.subheader("📜 运行日志 (实时刷新)")
-    log_content = read_last_lines(LOG_FILE)
-    st.code(log_content, language="bash")
-    
-    if st.session_state["is_running"]:
-        st.info("💡 任务运行中，你可以离开此页面，任务会在后台继续执行。")
-    elif st.session_state["final_result"]:
-        st.balloons()
