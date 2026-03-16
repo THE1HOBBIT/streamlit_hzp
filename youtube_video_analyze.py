@@ -12,6 +12,7 @@ import pandas as pd
 import subprocess
 from pathlib import Path
 import threading
+from streamlit_autorefresh import st_autorefresh 
 
 # ================= 1. 固定配置区域 =================
 # 飞书多维表格配置
